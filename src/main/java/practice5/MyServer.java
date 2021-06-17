@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.*;
 import io.jsonwebtoken.Claims;
@@ -98,7 +99,9 @@ public class MyServer {
             } catch (NumberFormatException e) {
                 exchange.sendResponseHeaders(404, 0); exchange.close();
             }
-            Product selectedProduct = sqlTest.getProductById(requestId);
+
+                Product selectedProduct = sqlTest.getProductById(requestId);
+
             //-----------------GET:----------------\\
             if (exchange.getRequestMethod().equals("GET")) {
                 if (selectedProduct != null) {
@@ -113,8 +116,13 @@ public class MyServer {
 
             //-----------------POST:----------------\\
             else if (exchange.getRequestMethod().equals("POST")){
-                Product updatedProduct = objectMapper.readValue(exchange.getRequestBody(), Product.class);
-
+                Product updatedProduct=new Product();
+                try {
+                    updatedProduct = objectMapper.readValue(exchange.getRequestBody(), Product.class);
+                }
+                catch (JsonMappingException exception){
+                    exchange.sendResponseHeaders(404,0);
+                }
                 if (updatedProduct != null && selectedProduct!=null) {
                     if(updatedProduct.getPrice()>0 &&updatedProduct.getAmount()>0) {
                         sqlTest.updateProductByValuesAndId(selectedProduct, updatedProduct);
@@ -153,8 +161,13 @@ public class MyServer {
         server.createContext("/api/good", exchange -> {
 
             if (exchange.getRequestMethod().equals("PUT")) {
-                Product createdProduct = objectMapper.readValue(exchange.getRequestBody(), Product.class);
-
+                Product createdProduct=new Product();
+                try {
+                    createdProduct = objectMapper.readValue(exchange.getRequestBody(), Product.class);
+                }
+                catch (JsonMappingException exception){
+                    exchange.sendResponseHeaders(404,0);
+                }
                 if(createdProduct.getPrice()>0&&createdProduct.getAmount()>0){
                     int createdId = sqlTest.insertProduct(createdProduct).getId();
                     byte[] response = ("{ \"status\": \"Created\",  \"product-id\": \""+ createdId + "\" }").getBytes(StandardCharsets.UTF_8);
